@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Backtest output artifacts
+*.html
+
+# Local data files
+data/*.csv
