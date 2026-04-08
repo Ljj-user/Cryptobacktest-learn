@@ -1,9 +1,12 @@
-from supertrend_strategy import SuperTrendFuturesStrategy as StrategyClass
+from strategies.ema_adx_strategy import EMA_ADX_Strategy as StrategyClass
 # 切换策略时，只需改上面这一行，例如：
-# from rsi_strategy import RSIFuturesStrategy as StrategyClass
-# from supertrend_strategy import SuperTrendFuturesStrategy as StrategyClass
+# from strategies.rsi_strategy import RSIFuturesStrategy as StrategyClass
+# from strategies.supertrend_strategy import SuperTrendFuturesStrategy as StrategyClass
+# from strategies.ema_adx_strategy import EMA_ADX_Strategy as StrategyClass
 from backtesting.lib import FractionalBacktest
 import pandas as pd
+import os
+from report_utils import write_stats_cards_to_html
 
 def print_chinese_stats(stats):
     metric_map = {
@@ -74,4 +77,7 @@ stats = bt.run()
 print(f"当前策略: {StrategyClass.__name__}")
 print(stats)
 print_chinese_stats(stats)
-bt.plot(resample='4h')
+os.makedirs('charts', exist_ok=True)
+output_html = f"charts/{StrategyClass.__name__}.html"
+bt.plot(resample='4h', filename=output_html)
+write_stats_cards_to_html(output_html, stats)

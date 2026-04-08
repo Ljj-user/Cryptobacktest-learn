@@ -1,0 +1,2 @@
+from supertrend_strategy import SuperTrendFuturesStrategy
+

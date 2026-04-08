@@ -4,6 +4,8 @@ from backtesting import Strategy, Backtest
 from backtesting.lib import crossover
 import pandas as pd
 import numpy as np
+import os
+from report_utils import write_stats_cards_to_html
 
 def RSI(series, period=14):
     """手动实现 RSI（Backtesting.py 推荐方式）"""
@@ -53,4 +55,7 @@ if __name__ == "__main__":
                   trade_on_close=True, exclusive_orders=True)
     stats = bt.run()
     print(stats)
-    bt.plot()
+    os.makedirs('charts', exist_ok=True)
+    output_html = 'charts/RSIFuturesStrategy.html'
+    bt.plot(resample='4h', filename=output_html)
+    write_stats_cards_to_html(output_html, stats)

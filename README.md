@@ -25,6 +25,24 @@
 .\.venv\Scripts\python.exe run_backtest.py
 ```
 
+---
+
+## 项目结构（当前）
+
+- `strategies/`：策略导入入口（方便统一切换策略）
+- `charts/`：回测生成的 HTML 图表输出目录
+- `run_backtest.py`：统一回测入口（推荐从这里切换策略）
+- `report_utils.py`：HTML 回测结果卡片渲染工具
+
+---
+
+## 回测图表说明
+
+- 所有策略导出的 HTML 会自动追加“回测结果卡片总览”
+- 卡片分为四类：收益规模、风险波动、综合质量、交易统计
+- 百分比字段自动带 `%`，并按统一规则保留 3 位小数
+- 综合质量指标包含简短科普与经验阈值提示（如 Sharpe、Sortino、Calmar、SQN）
+
 ### 方式 2：CMD 中激活虚拟环境
 
 ```cmd
