@@ -2,9 +2,9 @@
 
 ## 环境与依赖
 
-本项目使用本地虚拟环境（位于项目目录）：
+本项目使用项目内虚拟环境（位于仓库根目录）：
 
-- `D:\Coding\量化自学\Rsi_futures_project\.venv`
+- `.venv`
 
 已安装核心依赖：
 
@@ -65,7 +65,7 @@ where python
 where pip
 ```
 
-输出应优先指向：
+输出应优先指向当前项目目录下的虚拟环境，例如：
 
-- `D:\Coding\量化自学\Rsi_futures_project\.venv\Scripts\python.exe`
-- `D:\Coding\量化自学\Rsi_futures_project\.venv\Scripts\pip.exe`
+- `...\Rsi_futures_project\.venv\Scripts\python.exe`
+- `...\Rsi_futures_project\.venv\Scripts\pip.exe`
