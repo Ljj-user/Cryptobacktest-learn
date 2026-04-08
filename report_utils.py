@@ -3,16 +3,32 @@ from html import escape
 import numpy as np
 
 
-def write_stats_cards_to_html(html_path, stats):
+def _strategy_display_name(strategy_name: str) -> str:
+    """Map strategy class name to Chinese display title."""
+    name_map = {
+        "RSIFuturesStrategy": "RSI 策略",
+        "SuperTrendFuturesStrategy": "SuperTrend 策略",
+        "EMA_ADX_Strategy": "EMA + ADX 趋势策略",
+        "DCAStrategy": "定投策略（时间间隔）",
+        "DCARsiStrategy": "定投策略（RSI 触发变种）",
+        "LowDrawdownTrendStrategy": "低回撤趋势策略（EMA200 + ATR 风控）",
+    }
+    return name_map.get(strategy_name, strategy_name or "未命名策略")
+
+
+def write_stats_cards_to_html(html_path, stats, strategy_name=None):
     percent_keys = {
         'Exposure Time [%]',
         'Return [%]',
+        'Realism-Adjusted Return [%]',
         'Buy & Hold Return [%]',
         'Return (Ann.) [%]',
         'Volatility (Ann.) [%]',
         'CAGR [%]',
         'Max. Drawdown [%]',
         'Win Rate [%]',
+        'Capital Utilization [%]',
+        'Margin Utilization [%]',
         'Best Trade [%]',
         'Worst Trade [%]',
         'Avg. Trade [%]',
@@ -55,6 +71,7 @@ def write_stats_cards_to_html(html_path, stats):
         item("最终权益", "Equity Final [$]"),
         item("权益峰值", "Equity Peak [$]"),
         item("策略收益率", "Return [%]"),
+        item("实盘修正收益率", "Realism-Adjusted Return [%]"),
         item("买入持有收益率", "Buy & Hold Return [%]", "（未跑赢大盘可关注）"),
         item("年化收益率", "Return (Ann.) [%]"),
         item("复合年增长率", "CAGR [%]"),
@@ -63,7 +80,12 @@ def write_stats_cards_to_html(html_path, stats):
     card2 = "".join([
         item("最大回撤", "Max. Drawdown [%]"),
         item("年化波动率", "Volatility (Ann.) [%]"),
+        item("资金使用率", "Capital Utilization [%]"),
+        item("保证金占用率", "Margin Utilization [%]"),
         item("总手续费", "Commissions [$]"),
+        item("估算滑点成本", "Est. Slippage [$]"),
+        item("估算资金费率成本", "Est. Funding [$]"),
+        item("估算额外成本", "Est. Extra Costs [$]"),
         item("回测周期", "Duration"),
     ])
     card3 = "".join([
@@ -82,8 +104,13 @@ def write_stats_cards_to_html(html_path, stats):
         item("单笔最大亏损", "Worst Trade [%]"),
     ])
 
+    if strategy_name is None:
+        strategy_name = str(stats.get('_strategy', ''))
+    strategy_title = escape(_strategy_display_name(strategy_name))
+
     stats_block = (
         "<div id='backtest-summary' style='max-width:1100px;margin:20px auto;padding:0 4px;'>"
+        f"<h1 style='margin:0 0 8px 0;font-size:24px;line-height:1.3;'>{strategy_title}</h1>"
         "<h2 style='margin:0 0 12px 0;font-size:20px;'>回测结果卡片总览</h2>"
         "<div style='display:grid;grid-template-columns:repeat(2, minmax(320px, 1fr));gap:12px;'>"
         "<div style='padding:14px;border:1px solid #ddd;border-radius:10px;background:#fff;'>"

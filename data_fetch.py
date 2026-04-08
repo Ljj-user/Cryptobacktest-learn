@@ -71,8 +71,27 @@ def fetch_futures_ohlcv(
     df = pd.DataFrame(all_ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
     df = df[(df['timestamp'] >= start_ms) & (df['timestamp'] < end_ms)]
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    df = df.dropna()
     df = df.drop_duplicates(subset='timestamp').sort_values('timestamp')
     df.set_index('timestamp', inplace=True)
+
+    # 数据质量闸门：必须保持严格的 1h 连续
+    expected_delta = pd.Timedelta(hours=exchange.parse_timeframe(timeframe))
+    gaps = df.index.to_series().diff().dropna()
+    bad_gaps = gaps[gaps != expected_delta]
+    if not bad_gaps.empty:
+        sample = bad_gaps.head(5)
+        raise RuntimeError(
+            "K线时间序列不连续，存在缺失或异常间隔。"
+            f"\n期望间隔: {expected_delta}, 异常数量: {len(bad_gaps)}"
+            f"\n示例:\n{sample}"
+        )
+
+    # 简单异常K线过滤检查（高低价反转或非正价格）
+    invalid_rows = df[(df['high'] < df['low']) | (df[['open', 'high', 'low', 'close']] <= 0).any(axis=1)]
+    if not invalid_rows.empty:
+        raise RuntimeError(f"检测到异常K线数据行: {len(invalid_rows)}")
+
     df.to_csv('data/btc_futures_1h.csv')
     print(
         f"下载完成！时间范围 {start} ~ {end}，共 {len(df)} 根 K 线。"

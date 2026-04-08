@@ -1,4 +1,4 @@
-# RSI Futures Project
+# Crypto Futures Strategy Lab
 
 ## 项目简介
 
@@ -39,6 +39,31 @@
 - `charts/`：回测生成的 HTML 图表输出目录
 - `run_backtest.py`：统一回测入口（推荐从这里切换策略）
 - `report_utils.py`：HTML 回测结果卡片渲染工具
+
+---
+
+## 已回测策略与参数口径
+
+### 回测级别（统一口径）
+
+- 数据级别：`BTC/USDT:USDT` 永续合约 `1h` K 线（`data/btc_futures_1h.csv`）
+- 回测初始资金：`10000 USDT`
+- 杠杆/保证金：`margin=0.2`（约 5x）
+- 执行设置：`finalize_trades=True`，并支持 `realism mode`（下一根开盘成交 + 滑点/资金费率估算）
+
+### 已跑过的策略（本仓库）
+
+- `EMA_ADX_Strategy`：EMA 交叉 + ADX 趋势强度过滤；仓位按权益比例下单（默认 `size=0.10`）
+- `RSIFuturesStrategy`：RSI 超买超卖反转；仓位按权益比例下单（默认 `size=0.10`）
+- `SuperTrendFuturesStrategy`：SuperTrend 趋势跟随；仓位按权益比例下单（默认 `size=0.08`）
+- `DCAStrategy`（时间间隔）：按固定节奏分批加仓；总仓位上限与单次仓位上限受参数控制
+- `DCARsiStrategy`（RSI 触发变种）：RSI 极值触发 + EMA200 过滤的 DCA；支持 1.2x 递增加仓与总仓位上限
+- `LowDrawdownTrendStrategy`（EMA200 + ATR 风控）：仅做多，回撤买入 + ATR 动态止损 + 账户回撤熔断
+
+### 仓位相关指标（结果卡片）
+
+- `资金使用率[%]`：历史最大名义仓位 / 初始资金（10000）* 100
+- `保证金占用率[%]`：历史最大（名义仓位 * margin / 当时权益）* 100
 
 ---
 
