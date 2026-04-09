@@ -16,7 +16,52 @@ def _strategy_display_name(strategy_name: str) -> str:
     return name_map.get(strategy_name, strategy_name or "未命名策略")
 
 
-def write_stats_cards_to_html(html_path, stats, strategy_name=None):
+def _warnings_html(stats):
+    warnings = []
+    trades = stats.get('# Trades')
+    sharpe = stats.get('Sharpe Ratio')
+    dd = stats.get('Max. Drawdown [%]')
+    if trades is not None and float(trades) < 30:
+        warnings.append("交易样本较少（<30），统计稳定性偏弱。")
+    if sharpe is not None and float(sharpe) < 0:
+        warnings.append("夏普比率为负，策略风险收益比不理想。")
+    if dd is not None and float(dd) < -20:
+        warnings.append("最大回撤较高（<-20%），实盘承受压力可能较大。")
+    if not warnings:
+        return ""
+    items = "".join([f"<li>{escape(w)}</li>" for w in warnings])
+    return (
+        "<div style='margin:0 0 12px 0;padding:10px 12px;border:1px solid #f0d9a8;border-radius:8px;background:#fff9ea;'>"
+        "<div style='font-weight:600;margin-bottom:6px;'>证据强度提示</div>"
+        f"<ul style='margin:0;padding-left:18px;'>{items}</ul>"
+        "</div>"
+    )
+
+
+def _comparison_html(compare_rows):
+    if not compare_rows:
+        return ""
+    headers = ["Run", "Return [%]", "Max. Drawdown [%]", "Win Rate [%]", "Sharpe Ratio", "# Trades"]
+    th = "".join([f"<th style='text-align:left;padding:6px 8px;border-bottom:1px solid #eee;'>{escape(h)}</th>" for h in headers])
+    trs = []
+    for row in compare_rows:
+        tds = "".join(
+            [
+                f"<td style='padding:6px 8px;border-bottom:1px dashed #eee;'>{escape(str(row.get(k, '-')))}</td>"
+                for k in headers
+            ]
+        )
+        trs.append(f"<tr>{tds}</tr>")
+    tbody = "".join(trs)
+    return (
+        "<div style='margin:12px 0 16px 0;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fff;'>"
+        "<h3 style='margin:0 0 10px 0;font-size:16px;'>多次运行对比</h3>"
+        f"<table style='width:100%;border-collapse:collapse;'><thead><tr>{th}</tr></thead><tbody>{tbody}</tbody></table>"
+        "</div>"
+    )
+
+
+def write_stats_cards_to_html(html_path, stats, strategy_name=None, compare_rows=None):
     percent_keys = {
         'Exposure Time [%]',
         'Return [%]',
@@ -112,6 +157,8 @@ def write_stats_cards_to_html(html_path, stats, strategy_name=None):
         "<div id='backtest-summary' style='max-width:1100px;margin:20px auto;padding:0 4px;'>"
         f"<h1 style='margin:0 0 8px 0;font-size:24px;line-height:1.3;'>{strategy_title}</h1>"
         "<h2 style='margin:0 0 12px 0;font-size:20px;'>回测结果卡片总览</h2>"
+        f"{_warnings_html(stats)}"
+        f"{_comparison_html(compare_rows)}"
         "<div style='display:grid;grid-template-columns:repeat(2, minmax(320px, 1fr));gap:12px;'>"
         "<div style='padding:14px;border:1px solid #ddd;border-radius:10px;background:#fff;'>"
         "<h3 style='margin:0 0 10px 0;font-size:16px;'>一、收益规模 (Returns & Growth)</h3>"

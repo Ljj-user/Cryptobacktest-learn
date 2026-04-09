@@ -1,18 +1,87 @@
 # Crypto Futures Strategy Lab
 
-## 项目简介
+## 这是一个什么项目
 
-这是一个面向加密货币永续合约的量化策略学习与实验项目，目标是将「策略开发 - 历史回测 - 指标评估 - 图表输出」串成一套可复用流程。项目当前聚焦于技术指标类策略（如 RSI、SuperTrend、EMA+ADX），并通过统一入口脚本进行策略切换和结果对比，便于快速迭代参数与验证思路。
+这是一个面向加密货币永续合约的策略研究仓库，目标是把一套完整流程跑通：
 
-数据与交易接口基于 `ccxt`，回测框架基于 `backtesting`，最终结果会输出为可交互的 HTML 报告并附带关键绩效卡片，方便从收益、风险、交易质量等维度做复盘分析。该仓库适合用于个人量化自学、策略原型验证和后续实盘化前的研究准备。
+- 数据下载与质量检查
+- 策略回测（支持单次/样本外/滚动验证）
+- 成本与风险修正（realism mode）
+- 图表与指标卡片输出
+- 实验结果自动落盘，保证可复现
+
+适合用于：个人量化学习、策略原型验证、参数迭代与对比。
+
+---
+
+## 核心能力（大改后）
+
+### 1) 不用改源码切策略
+
+通过 `cli.py` 直接选择策略，不再手改 `run_backtest.py` 的 import。
+
+### 2) 统一配置与成本模型
+
+在 `config.py` 统一管理：
+
+- 资金与保证金参数
+- 手续费/滑点/funding（realism mode）
+- 验证模式（split-date / walk-forward）
+
+### 3) 回测引擎统一入口
+
+`backtest_engine.py` 统一处理：
+
+- 数据加载
+- 单次回测
+- 样本内外切分验证
+- 滚动窗口验证
+- 扩展指标计算（资金使用率、保证金占用率等）
+
+### 4) 实验追踪（可复现）
+
+每次运行自动保存：
+
+- `experiments/<run_id>/config.json`
+- `experiments/<run_id>/stats.json`
+- `experiments/<run_id>/trades.csv`
+- `experiments/<run_id>/equity.csv`
+
+并写入 `experiments/runs.jsonl` 作为运行索引。
+
+### 5) 报告更可读
+
+`report_utils.py` 输出的 HTML 卡片包含：
+
+- 策略中文标题（变种带括号）
+- 成本与仓位相关指标
+- 证据强度提示（如样本数偏少、Sharpe为负）
+- 最近多次同策略 run 对比表
+
+---
+
+## 项目结构（重点文件）
+
+- `cli.py`：命令行入口（推荐使用）
+- `backtest_engine.py`：回测执行与验证核心
+- `config.py`：统一配置模型
+- `strategy_registry.py`：策略注册表（新增策略从这里接入）
+- `experiment_tracker.py`：实验落盘与索引
+- `report_utils.py`：HTML 指标卡片渲染
+- `run_backtest.py`：兼容入口（默认配置快速运行）
+- `tools/optimize_low_drawdown.py`：参数网格优化脚本
+- `strategies/`：策略实现
+- `tests/`：自动化测试
+
+---
 
 ## 环境与依赖
 
-本项目使用项目内虚拟环境（位于仓库根目录）：
+项目使用仓库内虚拟环境：
 
 - `.venv`
 
-已安装核心依赖：
+核心依赖：
 
 - `backtesting`
 - `ccxt`
@@ -22,99 +91,122 @@
 
 ---
 
-## 常用命令（推荐）
+## 快速开始（最常用）
 
-### 方式 1：不激活环境，直接使用完整路径（最稳）
+### 1) 查看可用策略
 
 ```cmd
-.\.venv\Scripts\python.exe -m pip list
-.\.venv\Scripts\python.exe run_backtest.py
+.\.venv\Scripts\python.exe cli.py --list-strategies
+```
+
+### 2) 单次回测（默认最推荐）
+
+```cmd
+.\.venv\Scripts\python.exe cli.py --strategy low_drawdown_trend
+```
+
+### 3) 单次回测 + 参数覆盖
+
+```cmd
+.\.venv\Scripts\python.exe cli.py --strategy dca_rsi --set long_entry_rsi=22 --set take_profit_pct=4
+```
+
+### 4) 样本内/样本外（OOS）验证
+
+```cmd
+.\.venv\Scripts\python.exe cli.py --strategy low_drawdown_trend --split-date 2025-01-01
+```
+
+### 5) 滚动窗口（Walk-Forward）验证
+
+```cmd
+.\.venv\Scripts\python.exe cli.py --strategy low_drawdown_trend --walk-forward --wf-train-bars 2880 --wf-test-bars 720 --wf-step-bars 720
 ```
 
 ---
 
-## 项目结构（当前）
+## 回测口径（统一假设）
 
-- `strategies/`：策略导入入口（方便统一切换策略）
-- `charts/`：回测生成的 HTML 图表输出目录
-- `run_backtest.py`：统一回测入口（推荐从这里切换策略）
-- `report_utils.py`：HTML 回测结果卡片渲染工具
+- 数据：`BTC/USDT:USDT` 永续，`1h` K线（`data/btc_futures_1h.csv`）
+- 初始资金：`10000 USDT`
+- 保证金参数：`margin=0.2`（约 5x）
+- 订单处理：`finalize_trades=True`
+- 成本模型：支持 realism mode（下一根开盘成交 + 滑点/资金费率估算）
 
 ---
 
-## 已回测策略与参数口径
+## 已接入策略
 
-### 回测级别（统一口径）
+- `ema_adx`：EMA + ADX 趋势过滤
+- `rsi`：RSI 反转
+- `supertrend`：SuperTrend 趋势跟随
+- `dca_time`：按时间间隔 DCA
+- `dca_rsi`：RSI 触发 DCA 变种
+- `low_drawdown_trend`：低回撤趋势策略（EMA200 + ATR 风控）
 
-- 数据级别：`BTC/USDT:USDT` 永续合约 `1h` K 线（`data/btc_futures_1h.csv`）
-- 回测初始资金：`10000 USDT`
-- 杠杆/保证金：`margin=0.2`（约 5x）
-- 执行设置：`finalize_trades=True`，并支持 `realism mode`（下一根开盘成交 + 滑点/资金费率估算）
+用 `--list-strategies` 可以看到中文说明。
 
-### 已跑过的策略（本仓库）
+---
 
-- `EMA_ADX_Strategy`：EMA 交叉 + ADX 趋势强度过滤；仓位按权益比例下单（默认 `size=0.10`）
-- `RSIFuturesStrategy`：RSI 超买超卖反转；仓位按权益比例下单（默认 `size=0.10`）
-- `SuperTrendFuturesStrategy`：SuperTrend 趋势跟随；仓位按权益比例下单（默认 `size=0.08`）
-- `DCAStrategy`（时间间隔）：按固定节奏分批加仓；总仓位上限与单次仓位上限受参数控制
-- `DCARsiStrategy`（RSI 触发变种）：RSI 极值触发 + EMA200 过滤的 DCA；支持 1.2x 递增加仓与总仓位上限
-- `LowDrawdownTrendStrategy`（EMA200 + ATR 风控）：仅做多，回撤买入 + ATR 动态止损 + 账户回撤熔断
+## 指标说明（新增重点）
 
-### 仓位相关指标（结果卡片）
-
-- `资金使用率[%]`：历史最大名义仓位 / 初始资金（10000）* 100
+- `资金使用率[%]`：历史最大名义仓位 / 初始资金 * 100
 - `保证金占用率[%]`：历史最大（名义仓位 * margin / 当时权益）* 100
+- `实盘修正收益率[%]`：回测收益基础上，额外扣除 funding 估算后的收益口径
 
 ---
 
-## 回测图表说明
+## 科学回测建议流程
 
-- 所有策略导出的 HTML 会自动追加“回测结果卡片总览”
-- 卡片分为四类：收益规模、风险波动、综合质量、交易统计
-- 百分比字段自动带 `%`，并按统一规则保留 3 位小数
-- 综合质量指标包含简短科普与经验阈值提示（如 Sharpe、Sortino、Calmar、SQN）
+建议按这个顺序做，避免过拟合：
 
-### 方式 2：CMD 中激活虚拟环境
+1. IS（样本内）调参，确保逻辑可跑通
+2. OOS（样本外）验证，检查泛化
+3. WFA（滚动窗口）验证，检查跨时期稳定性
+
+经验阈值（可按风险偏好调整）：
+
+- `Max. Drawdown [%] > -8`
+- `Profit Factor > 1.1`
+- `# Trades >= 50`
+
+---
+
+## 测试与稳定性
+
+运行自动化测试：
 
 ```cmd
-.\.venv\Scripts\activate.bat
-python -m pip list
-python run_backtest.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests
 ```
 
-### 方式 3：PowerShell 中激活虚拟环境
+测试覆盖：
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-python -m pip list
-python run_backtest.py
-```
+- 策略注册有效性
+- 参数校验
+- 数据契约
+- 各策略 smoke 跑通
 
 ---
 
-## PowerShell 执行脚本被限制时
+## 常见问题
 
-如果提示“系统不允许运行脚本”，可临时放开当前会话（仅当前窗口生效）：
+### 新增策略怎么接入 CLI？
+
+1. 在 `strategies/` 新建策略类  
+2. 在 `strategy_registry.py` 注册一个新 key  
+3. （建议）在 `strategies/__init__.py` 导出  
+4. 之后直接 `--strategy <new_key>` 调用
+
+### PowerShell 执行脚本受限怎么办？
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
-如果不想改执行策略，直接使用“方式 1”完整路径命令即可。
-
----
-
-## 快速检查是否进入项目环境
-
-激活后执行：
+或者直接用完整路径运行（无需激活）：
 
 ```cmd
-where python
-where pip
+.\.venv\Scripts\python.exe cli.py --strategy low_drawdown_trend
 ```
-
-输出应优先指向当前项目目录下的虚拟环境，例如：
-
-- `...\Rsi_futures_project\.venv\Scripts\python.exe`
-- `...\Rsi_futures_project\.venv\Scripts\pip.exe`

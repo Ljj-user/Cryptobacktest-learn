@@ -1,0 +1,28 @@
+{
+  "strategy": "low_drawdown_trend",
+  "data_path": "data/btc_futures_1h.csv",
+  "output_dir": "charts",
+  "experiments_dir": "experiments",
+  "cash": 10000.0,
+  "margin": 0.2,
+  "trade_on_close": null,
+  "finalize_trades": true,
+  "exclusive_orders": true,
+  "resample": "4h",
+  "cost": {
+    "base_commission": 0.0002,
+    "slippage_bps_per_side": 3.0,
+    "est_funding_rate_8h": 0.0001,
+    "realism_mode": true
+  },
+  "validation": {
+    "split_date": null,
+    "walk_forward": false,
+    "wf_train_bars": 2880,
+    "wf_test_bars": 720,
+    "wf_step_bars": 720
+  },
+  "strategy_overrides": {},
+  "effective_trade_on_close": false,
+  "effective_commission": 0.0005
+}

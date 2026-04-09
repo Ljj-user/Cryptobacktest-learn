@@ -1,0 +1,3 @@
+{"run_dir": "experiments\\20260409_024530_low_drawdown_trend", "strategy": "low_drawdown_trend", "Return [%]": -0.5380563995718876, "Max. Drawdown [%]": -2.6593516315492005, "Win Rate [%]": 38.75, "Sharpe Ratio": -0.16909610340180192, "# Trades": 80}
+{"run_dir": "experiments\\20260409_030634_low_drawdown_trend", "strategy": "low_drawdown_trend", "Return [%]": -0.5380563995718876, "Max. Drawdown [%]": -2.6593516315492005, "Win Rate [%]": 38.75, "Sharpe Ratio": -0.16909610340180192, "# Trades": 80}
+{"run_dir": "experiments\\20260409_030746_rsi", "strategy": "rsi", "Return [%]": -16.203504080987223, "Max. Drawdown [%]": -16.340466665617104, "Win Rate [%]": 22.58064516129032, "Sharpe Ratio": -1.9516368367839332, "# Trades": 62}
