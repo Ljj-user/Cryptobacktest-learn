@@ -127,7 +127,11 @@ def write_stats_cards_to_html(html_path, stats, strategy_name=None, compare_rows
             item("最终权益", "Equity Final [$]"),
             item("权益峰值", "Equity Peak [$]"),
             item("策略收益率", "Return [%]"),
-            item("实盘修正收益率", "Realism-Adjusted Return [%]"),
+            item(
+                "实盘修正收益率",
+                "Realism-Adjusted Return [%]",
+                "（最终权益减估算资金费；滑点已含在有效佣金中）",
+            ),
             item("买入持有收益率", "Buy & Hold Return [%]", "（未跑赢大盘可关注）"),
             item("年化收益率", "Return (Ann.) [%]"),
             item("复合年增长率", "CAGR [%]"),
@@ -140,10 +144,14 @@ def write_stats_cards_to_html(html_path, stats, strategy_name=None, compare_rows
             item("年化波动率", "Volatility (Ann.) [%]"),
             item("资金使用率", "Capital Utilization [%]"),
             item("保证金占用率", "Margin Utilization [%]"),
-            item("总手续费", "Commissions [$]"),
-            item("估算滑点成本", "Est. Slippage [$]"),
-            item("估算资金费率成本", "Est. Funding [$]"),
-            item("估算额外成本", "Est. Extra Costs [$]"),
+            item("总手续费", "Commissions [$]", "（已含 realism 下有效佣金）"),
+            item(
+                "估算滑点成本",
+                "Est. Slippage [$]",
+                "（与滑点bps同口径的展示值；未重复从权益扣除）",
+            ),
+            item("估算资金费率成本", "Est. Funding [$]", "（启发式 8h 费率）"),
+            item("估算额外成本", "Est. Extra Costs [$]", "（当前等于资金费，用于修正收益率）"),
             item("回测周期", "Duration"),
         ]
     )

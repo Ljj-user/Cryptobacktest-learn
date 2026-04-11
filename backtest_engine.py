@@ -98,6 +98,20 @@ def calculate_margin_utilization(stats, data, margin=0.2):
 
 
 def estimate_realism_costs(stats, data, slippage_bps_per_side: float, est_funding_rate_8h: float):
+    """
+    Post-hoc cost estimates AFTER the FractionalBacktest run.
+
+    - Slippage: dollar estimate using the same bps as folded into commission_rate() in realism
+      mode. Shown as *informational*; it is NOT subtracted again when computing
+      Realism-Adjusted Return (that would double-count vs the wider commission).
+    - Funding: heuristic using bars_held/8 as pseudo 8h funding periods; subtracted from
+      final equity for Realism-Adjusted Return only.
+
+    Returns:
+        (est_slippage_dollars, est_funding_dollars, est_funding_dollars)
+        The third value duplicates the second so callers can use it as "extra post-hoc cost"
+        (funding-only) for adjusted return; kept for backward compatibility with stats keys.
+    """
     trades = stats.get("_trades", None)
     if trades is None or len(trades) == 0:
         return 0.0, 0.0, 0.0
@@ -119,6 +133,7 @@ def estimate_realism_costs(stats, data, slippage_bps_per_side: float, est_fundin
             float(closes[entry_bar : exit_bar + 1].mean()) if exit_bar >= entry_bar else entry_price
         )
         total_funding += (size * avg_price) * est_funding_rate_8h * funding_periods
+    # Third tuple element == funding (used as Est. Extra Costs; slippage not double-applied to equity)
     return total_slippage, total_funding, total_funding
 
 
@@ -159,9 +174,9 @@ def _run_single(
             slippage_bps_per_side=config.cost.slippage_bps_per_side,
             est_funding_rate_8h=config.cost.est_funding_rate_8h,
         )
-        stats["Est. Slippage [$]"] = est_slippage
+        stats["Est. Slippage [$]"] = est_slippage  # informational; same bps already in commission
         stats["Est. Funding [$]"] = est_funding
-        stats["Est. Extra Costs [$]"] = est_extra
+        stats["Est. Extra Costs [$]"] = est_extra  # equals funding; used only for adjusted return
         adj_equity = float(stats["Equity Final [$]"]) - est_extra
         stats["Realism-Adjusted Return [%]"] = ((adj_equity / config.cash) - 1.0) * 100.0
     return stats, stats.get("_trades"), stats.get("_equity_curve")

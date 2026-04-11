@@ -194,7 +194,10 @@ test.cmd
 - 初始资金：`10000 USDT`
 - 保证金参数：`margin=0.2`（约 5x）
 - 订单处理：`finalize_trades=True`
-- 成本模型：支持 realism mode（下一根开盘成交 + 滑点/资金费率估算）
+- 成本模型：支持 realism mode（有效佣金 = 手续费 + 滑点 bps；资金费为事后启发式估算）
+
+**详细假设、与实盘的差异、指标是否重复计量** 见 [docs/backtest_assumptions.md](docs/backtest_assumptions.md)。
+升级 `backtesting` / `pandas` / `ccxt` 时的检查步骤见 [docs/dependency_upgrade_checklist.md](docs/dependency_upgrade_checklist.md)。
 
 ---
 
@@ -217,7 +220,12 @@ test.cmd
 
 - `资金使用率[%]`：历史最大名义仓位 / 初始资金 * 100
 - `保证金占用率[%]`：历史最大（名义仓位 * margin / 当时权益）* 100
-- `实盘修正收益率[%]`：回测收益基础上，额外扣除 funding 估算后的收益口径
+- `策略收益率 Return [%]`：引擎内已按 **有效佣金**（含滑点 bps）扣费后的收益
+- `估算滑点成本 Est. Slippage [$]`：与滑点 bps **同口径**的美元展示，**未再从最终权益重复扣除**（避免与佣金重复）
+- `估算资金费率成本 Est. Funding [$]`：按持仓时长与固定 8h 费率粗算
+- `实盘修正收益率 Realism-Adjusted Return [%]`：在最终权益上 **减去估算资金费**；**不**再减 `Est. Slippage`（滑点已在仿真佣金中体现）
+
+完整说明见 [docs/backtest_assumptions.md](docs/backtest_assumptions.md)。
 
 ---
 
