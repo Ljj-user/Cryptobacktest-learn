@@ -1,0 +1,5 @@
+# Dev: lint, format, git hooks (install with: pip install -r requirements-dev.txt)
+-r requirements.txt
+
+ruff>=0.8.0,<0.15
+pre-commit>=4.0.0,<5

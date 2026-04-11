@@ -1,6 +1,6 @@
-from backtesting import Strategy
-import pandas as pd
 import numpy as np
+import pandas as pd
+from backtesting import Strategy
 
 
 def RSI(series, period=14):
@@ -22,24 +22,24 @@ def EMA(series, period):
 class DCARsiStrategy(Strategy):
     # ================== 可调参数 ==================
     rsi_period = 14
-    long_entry_rsi = 22           # 放宽后区间: 20~25（默认22）
-    short_entry_rsi = 82          # 放宽后区间: 80~85（仅保留参数，当前禁用空头DCA）
-    rsi_exit_long = 55            # 多头均值回归退出阈值
-    rsi_exit_short = 45           # 空头均值回归退出阈值
-    dca_usdt = 200.0              # 首次DCA名义仓位(USDT)
-    dca_scale = 1.2               # 每次加仓按1.2x递增
-    max_dca_orders = 20           # 单个持仓周期最多加仓次数
-    max_total_allocation = 0.8    # 总目标仓位上限（占权益比例）
-    max_single_allocation = 0.10  # 单次下单上限（占权益比例）
-    min_order_value = 10.0        # 过小订单忽略，避免无效交易
-    take_profit_pct = 4           # 更激进：浮盈4%就止盈
-    stop_loss_pct = -5            # 更激进：浮亏5%就止损
-    trailing_stop_pct = 3         # 更激进：从峰值回撤3%则离场
-    cooldown_bars = 12            # 平仓后冷却，降低重复打脸
-    ema_fast_period = 50          # 趋势过滤快线
-    ema_slow_period = 200         # 趋势过滤慢线（EMA200）
-    adx_period = 14               # 趋势强度过滤
-    adx_min = 18                  # ADX过低时不做反转DCA
+    long_entry_rsi = 22  # 放宽后区间: 20~25（默认22）
+    short_entry_rsi = 82  # 放宽后区间: 80~85（仅保留参数，当前禁用空头DCA）
+    rsi_exit_long = 55  # 多头均值回归退出阈值
+    rsi_exit_short = 45  # 空头均值回归退出阈值
+    dca_usdt = 280.0  # 首次DCA名义仓位(USDT)
+    dca_scale = 1.28  # 每次加仓按1.28x递增
+    max_dca_orders = 20  # 单个持仓周期最多加仓次数
+    max_total_allocation = 0.92  # 总目标仓位上限（占权益比例）
+    max_single_allocation = 0.15  # 单次下单上限（占权益比例）
+    min_order_value = 10.0  # 过小订单忽略，避免无效交易
+    take_profit_pct = 4  # 更激进：浮盈4%就止盈
+    stop_loss_pct = -5  # 更激进：浮亏5%就止损
+    trailing_stop_pct = 3  # 更激进：从峰值回撤3%则离场
+    cooldown_bars = 12  # 平仓后冷却，降低重复打脸
+    ema_fast_period = 50  # 趋势过滤快线
+    ema_slow_period = 200  # 趋势过滤慢线（EMA200）
+    adx_period = 14  # 趋势强度过滤
+    adx_min = 18  # ADX过低时不做反转DCA
     # ============================================
 
     def init(self):
@@ -48,7 +48,7 @@ class DCARsiStrategy(Strategy):
         self.ema_slow = self.I(EMA, self.data.Close, self.ema_slow_period, name="EMA Slow")
         self.dca_count = 0
         self.cycle_side = 0  # 1=long cycle, -1=short cycle, 0=idle
-        self.last_exit_bar = -10**9
+        self.last_exit_bar = -(10**9)
         self.peak_pl_pct = -np.inf
 
     def _reset_cycle(self) -> None:
@@ -74,7 +74,9 @@ class DCARsiStrategy(Strategy):
         ).max(axis=1)
         atr = tr.rolling(self.adx_period, min_periods=self.adx_period).mean()
         plus_di = 100 * (plus_dm.rolling(self.adx_period, min_periods=self.adx_period).mean() / atr)
-        minus_di = 100 * (minus_dm.rolling(self.adx_period, min_periods=self.adx_period).mean() / atr)
+        minus_di = 100 * (
+            minus_dm.rolling(self.adx_period, min_periods=self.adx_period).mean() / atr
+        )
         dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
         adx = dx.rolling(self.adx_period, min_periods=self.adx_period).mean().fillna(0)
         return float(adx.iloc[-1]) if len(adx) else 0.0
@@ -82,7 +84,7 @@ class DCARsiStrategy(Strategy):
     def _add_position(self, side: int, price: float) -> None:
         current_notional = abs(self.position.size) * price if self.position else 0.0
         max_notional = self.equity * self.max_total_allocation
-        next_add = self.dca_usdt * (self.dca_scale ** self.dca_count)
+        next_add = self.dca_usdt * (self.dca_scale**self.dca_count)
         remaining_capacity = max_notional - current_notional
         add_notional = min(next_add, remaining_capacity)
         if add_notional < self.min_order_value:
@@ -114,8 +116,13 @@ class DCARsiStrategy(Strategy):
         # 风控优先：浮盈/浮亏触发后平仓，重置下一轮DCA
         if self.position:
             self.peak_pl_pct = max(self.peak_pl_pct, float(self.position.pl_pct))
-            trailing_triggered = (self.peak_pl_pct - float(self.position.pl_pct)) >= self.trailing_stop_pct
-            if self.position.pl_pct >= self.take_profit_pct or self.position.pl_pct <= self.stop_loss_pct:
+            trailing_triggered = (
+                self.peak_pl_pct - float(self.position.pl_pct)
+            ) >= self.trailing_stop_pct
+            if (
+                self.position.pl_pct >= self.take_profit_pct
+                or self.position.pl_pct <= self.stop_loss_pct
+            ):
                 self.position.close()
                 self._reset_cycle()
                 return
@@ -146,6 +153,12 @@ class DCARsiStrategy(Strategy):
             return
 
         # 过滤弱趋势与逆势方向，减少“抄底抄顶被趋势碾压”
-        if long_signal and self.cycle_side in (0, 1) and long_trend_ok and price_above_ema200 and strong_trend:
+        if (
+            long_signal
+            and self.cycle_side in (0, 1)
+            and long_trend_ok
+            and price_above_ema200
+            and strong_trend
+        ):
             self._add_position(side=1, price=price)
         # 按要求禁用空头DCA：不再执行 short_signal 开仓

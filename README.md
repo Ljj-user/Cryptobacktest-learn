@@ -75,23 +75,86 @@
 
 ---
 
-## 环境与依赖
+## 安装与环境
 
-项目使用仓库内虚拟环境：
+需要 **Python 3.10+**（CI 在 3.10 / 3.12 上跑通）。
 
-- `.venv`
+### 方式 A：venv + pip（推荐）
 
-核心依赖：
+```bash
+cd Crypto-futures-strategy-lab
+python -m venv .venv
+# Windows CMD:
+.venv\Scripts\activate
+# Windows PowerShell:
+# .\.venv\Scripts\Activate.ps1
+# macOS / Linux:
+# source .venv/bin/activate
 
-- `backtesting`
-- `ccxt`
-- `pandas`
-- `numpy`
-- `matplotlib`
+pip install -U pip
+pip install -r requirements.txt
+```
+
+### 方式 B：Conda（可选）
+
+```bash
+conda create -n crypto-lab python=3.12 -y
+conda activate crypto-lab
+pip install -r requirements.txt
+```
+
+依赖说明见 `requirements.txt`（核心：`backtesting`、`pandas`、`numpy`、`matplotlib`、`ccxt`）。
+
+---
+
+## 最小可复现示例
+
+1. 确保仓库根目录存在示例数据 `data/btc_futures_1h.csv`（若无，可用 `python data_fetch.py` 从 Binance 拉取，需可访问交易所 API 与网络）。
+2. 运行一次默认回测：
+
+```bash
+python cli.py --strategy low_drawdown_trend
+```
+
+终端会打印类似摘要（数值随数据与版本略有不同）：
+
+```
+Start                                           2024-01-01 00:00:00
+End                                             2025-12-31 23:00:00
+Return [%]                                      ...
+Max. Drawdown [%]                               ...
+# Trades                                        ...
+_strategy                                       LowDrawdownTrendStrategy
+...
+Artifacts saved: experiments\<run_id>_low_drawdown_trend
+```
+
+同时在 `charts/` 下生成策略对应的 HTML 图表；实验产物在 `experiments/<run_id>_.../`。
 
 ---
 
 ## 快速开始（最常用）
+
+### 0) 懒人一键脚本（推荐）
+
+项目根目录已提供 4 个快捷脚本，减少重复输入：
+
+- `start.cmd`：进入项目并激活 `.venv`
+- `list-strategies.cmd`：显示可用策略列表
+- `bt.cmd`：回测命令快捷入口（参数原样透传给 `cli.py`）
+- `test.cmd`：运行测试
+
+示例：
+
+```cmd
+start.cmd
+list-strategies.cmd
+bt.cmd --strategy low_drawdown_trend
+bt.cmd --strategy dca_rsi --set long_entry_rsi=22 --set take_profit_pct=4
+test.cmd
+```
+
+---
 
 ### 1) 查看可用策略
 
@@ -143,6 +206,8 @@
 - `dca_time`：按时间间隔 DCA
 - `dca_rsi`：RSI 触发 DCA 变种
 - `low_drawdown_trend`：低回撤趋势策略（EMA200 + ATR 风控）
+- `donchian_long`：Donchian 突破 + ATR 追踪 + 金字塔加仓（仅做多）
+- `intraday_seasonality_btc`：UTC 固定时段开平（日内季节性研究用）
 
 用 `--list-strategies` 可以看到中文说明。
 
@@ -180,6 +245,12 @@
 .\.venv\Scripts\python.exe -m unittest discover -s tests
 ```
 
+或（已激活 venv 时）：
+
+```bash
+python -m unittest discover -s tests -v
+```
+
 测试覆盖：
 
 - 策略注册有效性
@@ -187,15 +258,64 @@
 - 数据契约
 - 各策略 smoke 跑通
 
+推送至 `main` / `master` 或提交 PR 时，GitHub Actions 会安装 `requirements-dev.txt`（含运行时依赖），依次执行 **Ruff 检查**、**Ruff 格式化检查**、`unittest`（见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)）。fork 后可在自己仓库的 Actions 页查看运行结果。
+
+### 开发：代码风格与 pre-commit
+
+安装开发依赖（含 `ruff`、`pre-commit`）：
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+在仓库根目录启用 Git 提交前检查（可选但推荐）：
+
+```bash
+pre-commit install
+```
+
+手动对全仓库跑一遍（与 CI 口径一致）：
+
+```bash
+ruff check .
+ruff format --check .
+pre-commit run --all-files
+```
+
+配置见根目录 [`pyproject.toml`](pyproject.toml)（Ruff）与 [`.pre-commit-config.yaml`](.pre-commit-config.yaml)。
+
+---
+
+## 贡献
+
+欢迎 Issue / PR。提交前请：
+
+1. 运行 `ruff check .` 与 `ruff format --check .`（或 `pre-commit run --all-files`）
+2. 运行 `python -m unittest discover -s tests` 确保通过
+3. 策略变更请在 `strategy_registry.py` 注册并补充 `strategies/__init__.py` 导出（如适用）
+4. 保持改动聚焦、避免无关大改
+
+---
+
+## 许可
+
+本项目采用 **MIT License**，见仓库根目录 `LICENSE`。
+
+---
+
+## 联系方式
+
+通过 GitHub 仓库的 **Issues** 沟通即可（无单独邮件列表）。
+
 ---
 
 ## 常见问题
 
 ### 新增策略怎么接入 CLI？
 
-1. 在 `strategies/` 新建策略类  
-2. 在 `strategy_registry.py` 注册一个新 key  
-3. （建议）在 `strategies/__init__.py` 导出  
+1. 在 `strategies/` 新建策略类
+2. 在 `strategy_registry.py` 注册一个新 key
+3. （建议）在 `strategies/__init__.py` 导出
 4. 之后直接 `--strategy <new_key>` 调用
 
 ### PowerShell 执行脚本受限怎么办？

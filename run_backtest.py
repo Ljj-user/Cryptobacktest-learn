@@ -4,56 +4,63 @@ from backtesting.lib import FractionalBacktest
 
 from backtest_engine import load_ohlcv_data, run_backtest
 from config import BacktestConfig
-from experiment_tracker import append_run_index, create_run_dir, load_recent_runs, save_run_artifacts
+from experiment_tracker import (
+    append_run_index,
+    create_run_dir,
+    load_recent_runs,
+    save_run_artifacts,
+)
 from report_utils import write_stats_cards_to_html
 from strategy_registry import get_strategy_meta
 
+
 def print_chinese_stats(stats):
     metric_map = {
-        'Start': '开始时间',
-        'End': '结束时间',
-        'Duration': '回测周期',
-        'Exposure Time [%]': '持仓时间占比[%]',
-        'Equity Final [$]': '最终权益[$]',
-        'Equity Peak [$]': '权益峰值[$]',
-        'Commissions [$]': '总手续费[$]',
-        'Est. Slippage [$]': '估算滑点成本[$]',
-        'Est. Funding [$]': '估算资金费率成本[$]',
-        'Est. Extra Costs [$]': '估算额外成本[$]',
-        'Capital Utilization [%]': '资金使用率[%]',
-        'Margin Utilization [%]': '保证金占用率[%]',
-        'Return [%]': '策略收益率[%]',
-        'Realism-Adjusted Return [%]': '实盘修正收益率[%]',
-        'Buy & Hold Return [%]': '买入持有收益率[%]',
-        'Return (Ann.) [%]': '年化收益率[%]',
-        'Volatility (Ann.) [%]': '年化波动率[%]',
-        'CAGR [%]': '复合年增长率[%]',
-        'Sharpe Ratio': '夏普比率',
-        'Sortino Ratio': '索提诺比率',
-        'Calmar Ratio': '卡玛比率',
-        'Alpha [%]': 'Alpha[%]',
-        'Beta': 'Beta',
-        'Max. Drawdown [%]': '最大回撤[%]',
-        'Avg. Drawdown [%]': '平均回撤[%]',
-        'Max. Drawdown Duration': '最大回撤持续时间',
-        'Avg. Drawdown Duration': '平均回撤持续时间',
-        '# Trades': '交易次数',
-        'Win Rate [%]': '胜率[%]',
-        'Best Trade [%]': '单笔最大收益[%]',
-        'Worst Trade [%]': '单笔最大亏损[%]',
-        'Avg. Trade [%]': '单笔平均收益[%]',
-        'Max. Trade Duration': '最长持仓时间',
-        'Avg. Trade Duration': '平均持仓时间',
-        'Profit Factor': '盈亏比(Profit Factor)',
-        'Expectancy [%]': '期望收益[%]',
-        'SQN': '系统质量指数(SQN)',
-        'Kelly Criterion': '凯利公式值',
+        "Start": "开始时间",
+        "End": "结束时间",
+        "Duration": "回测周期",
+        "Exposure Time [%]": "持仓时间占比[%]",
+        "Equity Final [$]": "最终权益[$]",
+        "Equity Peak [$]": "权益峰值[$]",
+        "Commissions [$]": "总手续费[$]",
+        "Est. Slippage [$]": "估算滑点成本[$]",
+        "Est. Funding [$]": "估算资金费率成本[$]",
+        "Est. Extra Costs [$]": "估算额外成本[$]",
+        "Capital Utilization [%]": "资金使用率[%]",
+        "Margin Utilization [%]": "保证金占用率[%]",
+        "Return [%]": "策略收益率[%]",
+        "Realism-Adjusted Return [%]": "实盘修正收益率[%]",
+        "Buy & Hold Return [%]": "买入持有收益率[%]",
+        "Return (Ann.) [%]": "年化收益率[%]",
+        "Volatility (Ann.) [%]": "年化波动率[%]",
+        "CAGR [%]": "复合年增长率[%]",
+        "Sharpe Ratio": "夏普比率",
+        "Sortino Ratio": "索提诺比率",
+        "Calmar Ratio": "卡玛比率",
+        "Alpha [%]": "Alpha[%]",
+        "Beta": "Beta",
+        "Max. Drawdown [%]": "最大回撤[%]",
+        "Avg. Drawdown [%]": "平均回撤[%]",
+        "Max. Drawdown Duration": "最大回撤持续时间",
+        "Avg. Drawdown Duration": "平均回撤持续时间",
+        "# Trades": "交易次数",
+        "Win Rate [%]": "胜率[%]",
+        "Best Trade [%]": "单笔最大收益[%]",
+        "Worst Trade [%]": "单笔最大亏损[%]",
+        "Avg. Trade [%]": "单笔平均收益[%]",
+        "Max. Trade Duration": "最长持仓时间",
+        "Avg. Trade Duration": "平均持仓时间",
+        "Profit Factor": "盈亏比(Profit Factor)",
+        "Expectancy [%]": "期望收益[%]",
+        "SQN": "系统质量指数(SQN)",
+        "Kelly Criterion": "凯利公式值",
     }
 
     print("\n===== 中文回测指标 =====")
     for key, zh_key in metric_map.items():
         if key in stats:
             print(f"{zh_key}: {stats[key]}")
+
 
 def main():
     config = BacktestConfig()
@@ -106,7 +113,9 @@ def main():
         commission=config.cost.commission_rate(),
         margin=config.margin,
         finalize_trades=config.finalize_trades,
-        trade_on_close=config.trade_on_close if config.trade_on_close is not None else (not config.cost.realism_mode),
+        trade_on_close=config.trade_on_close
+        if config.trade_on_close is not None
+        else (not config.cost.realism_mode),
         exclusive_orders=config.exclusive_orders,
     )
     bt_plot.run()

@@ -1,9 +1,6 @@
-from backtesting import Strategy, Backtest
-from backtesting.lib import FractionalBacktest
-import pandas as pd
 import numpy as np
-import os
-from report_utils import write_stats_cards_to_html
+import pandas as pd
+from backtesting import Strategy
 
 
 def EMA(series, period):
@@ -23,8 +20,7 @@ def ADX(high, low, close, period=14):
     minus_dm = pd.Series(np.where((down_move > up_move) & (down_move > 0), down_move, 0.0))
 
     tr = pd.concat(
-        [(high - low).abs(), (high - close.shift()).abs(), (low - close.shift()).abs()],
-        axis=1
+        [(high - low).abs(), (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1
     ).max(axis=1)
     atr = tr.rolling(period, min_periods=period).mean()
 
@@ -39,12 +35,12 @@ class EMA_ADX_Strategy(Strategy):
     fast_ema = 9
     slow_ema = 21
     adx_threshold = 25
-    size_percent = 0.10
+    size_percent = 0.16
 
     def init(self):
-        self.ema_fast = self.I(EMA, self.data.Close, self.fast_ema, name='EMA Fast')
-        self.ema_slow = self.I(EMA, self.data.Close, self.slow_ema, name='EMA Slow')
-        self.adx = self.I(ADX, self.data.High, self.data.Low, self.data.Close, name='ADX')
+        self.ema_fast = self.I(EMA, self.data.Close, self.fast_ema, name="EMA Fast")
+        self.ema_slow = self.I(EMA, self.data.Close, self.slow_ema, name="EMA Slow")
+        self.adx = self.I(ADX, self.data.High, self.data.Low, self.data.Close, name="ADX")
 
     def next(self):
         price = self.data.Close[-1]
@@ -55,7 +51,7 @@ class EMA_ADX_Strategy(Strategy):
             elif self.adx[-1] > self.adx_threshold and self.ema_fast[-1] < self.ema_slow[-1]:
                 self.sell(size=self.size_percent, sl=price * 1.01)
         else:
-            if (self.position.is_long and self.ema_fast[-1] < self.ema_slow[-1]) or \
-               (self.position.is_short and self.ema_fast[-1] > self.ema_slow[-1]):
+            if (self.position.is_long and self.ema_fast[-1] < self.ema_slow[-1]) or (
+                self.position.is_short and self.ema_fast[-1] > self.ema_slow[-1]
+            ):
                 self.position.close()
-

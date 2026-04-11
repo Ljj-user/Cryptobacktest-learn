@@ -1,9 +1,5 @@
-from backtesting import Strategy, Backtest
-from backtesting.lib import crossover
 import pandas as pd
-import numpy as np
-import os
-from report_utils import write_stats_cards_to_html
+from backtesting import Strategy
 
 
 def RSI(series, period=14):
@@ -23,7 +19,7 @@ class RSIFuturesStrategy(Strategy):
     risk_per_trade = 0.02
 
     def init(self):
-        self.rsi = self.I(RSI, self.data.Close, self.rsi_period, name='RSI')
+        self.rsi = self.I(RSI, self.data.Close, self.rsi_period, name="RSI")
         self.equity_peak = self.equity
 
     def next(self):
@@ -32,13 +28,13 @@ class RSIFuturesStrategy(Strategy):
             if self.rsi[-1] < self.rsi_lower:
                 sl = price * 0.992
                 tp = price * 1.015
-                self.buy(size=0.1, sl=sl, tp=tp)
+                self.buy(size=0.18, sl=sl, tp=tp)
             elif self.rsi[-1] > self.rsi_upper:
                 sl = price * 1.015
                 tp = price * 0.97
-                self.sell(size=0.1, sl=sl, tp=tp)
+                self.sell(size=0.18, sl=sl, tp=tp)
         else:
-            if (self.position.is_long and self.rsi[-1] > self.rsi_upper) or \
-               (self.position.is_short and self.rsi[-1] < self.rsi_lower):
+            if (self.position.is_long and self.rsi[-1] > self.rsi_upper) or (
+                self.position.is_short and self.rsi[-1] < self.rsi_lower
+            ):
                 self.position.close()
-

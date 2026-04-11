@@ -1,11 +1,6 @@
-from backtesting import Strategy, Backtest
-from backtesting.lib import FractionalBacktest
-import pandas as pd
 import numpy as np
-from html import escape
-from decimal import Decimal, InvalidOperation, ROUND_DOWN, ROUND_HALF_UP
-import os
-from report_utils import write_stats_cards_to_html
+import pandas as pd
+from backtesting import Strategy
 
 
 def SuperTrend(high, low, close, atr_period=10, multiplier=3.0):
@@ -38,12 +33,16 @@ def SuperTrend(high, low, close, atr_period=10, multiplier=3.0):
             trend.iloc[i] = trend.iloc[i - 1]
             continue
 
-        if (basic_upper.iloc[i] < final_upper.iloc[i - 1]) or (close.iloc[i - 1] > final_upper.iloc[i - 1]):
+        if (basic_upper.iloc[i] < final_upper.iloc[i - 1]) or (
+            close.iloc[i - 1] > final_upper.iloc[i - 1]
+        ):
             final_upper.iloc[i] = basic_upper.iloc[i]
         else:
             final_upper.iloc[i] = final_upper.iloc[i - 1]
 
-        if (basic_lower.iloc[i] > final_lower.iloc[i - 1]) or (close.iloc[i - 1] < final_lower.iloc[i - 1]):
+        if (basic_lower.iloc[i] > final_lower.iloc[i - 1]) or (
+            close.iloc[i - 1] < final_lower.iloc[i - 1]
+        ):
             final_lower.iloc[i] = basic_lower.iloc[i]
         else:
             final_lower.iloc[i] = final_lower.iloc[i - 1]
@@ -84,9 +83,9 @@ class SuperTrendFuturesStrategy(Strategy):
             self.data.Close,
             self.atr_period,
             self.multiplier,
-            name='SuperTrend',
+            name="SuperTrend",
             overlay=True,
-            color='#FFB000',
+            color="#FFB000",
         )
         self.trend = self.I(
             TrendDirection,
@@ -95,7 +94,7 @@ class SuperTrendFuturesStrategy(Strategy):
             self.data.Close,
             self.atr_period,
             self.multiplier,
-            name='Trend',
+            name="Trend",
             plot=False,
         )
 
@@ -103,11 +102,11 @@ class SuperTrendFuturesStrategy(Strategy):
         price = self.data.Close[-1]
         if not self.position:
             if self.trend[-1] == 1:
-                self.buy(size=0.08, sl=price * 0.96)
+                self.buy(size=0.14, sl=price * 0.96)
             elif self.trend[-1] == -1:
-                self.sell(size=0.08, sl=price * 1.04)
+                self.sell(size=0.14, sl=price * 1.04)
         else:
-            if (self.position.is_long and self.trend[-1] == -1) or \
-               (self.position.is_short and self.trend[-1] == 1):
+            if (self.position.is_long and self.trend[-1] == -1) or (
+                self.position.is_short and self.trend[-1] == 1
+            ):
                 self.position.close()
-

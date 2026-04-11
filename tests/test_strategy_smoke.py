@@ -1,7 +1,5 @@
 import unittest
 
-import pandas as pd
-
 from backtest_engine import load_ohlcv_data, run_backtest
 from config import BacktestConfig
 from strategy_registry import list_strategy_keys
@@ -11,7 +9,7 @@ class StrategySmokeTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         data = load_ohlcv_data("data/btc_futures_1h.csv")
-        cls.data = data.iloc[:24 * 20].copy()
+        cls.data = data.iloc[: 24 * 20].copy()
 
     def test_all_strategies_run(self):
         for key in list_strategy_keys():

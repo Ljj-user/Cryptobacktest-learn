@@ -115,12 +115,16 @@ def estimate_realism_costs(stats, data, slippage_bps_per_side: float, est_fundin
         total_slippage += (size * entry_price + size * exit_price) * slip_rate
         bars_held = max(1, exit_bar - entry_bar + 1)
         funding_periods = bars_held / 8.0
-        avg_price = float(closes[entry_bar : exit_bar + 1].mean()) if exit_bar >= entry_bar else entry_price
+        avg_price = (
+            float(closes[entry_bar : exit_bar + 1].mean()) if exit_bar >= entry_bar else entry_price
+        )
         total_funding += (size * avg_price) * est_funding_rate_8h * funding_periods
     return total_slippage, total_funding, total_funding
 
 
-def _run_single(data: pd.DataFrame, config: BacktestConfig) -> Tuple[Dict, pd.DataFrame, pd.DataFrame]:
+def _run_single(
+    data: pd.DataFrame, config: BacktestConfig
+) -> Tuple[Dict, pd.DataFrame, pd.DataFrame]:
     strategy_meta = get_strategy_meta(config.strategy)
     strategy_cls = strategy_meta.cls
     overrides_original = _apply_strategy_overrides(strategy_cls, config.strategy_overrides)
@@ -132,7 +136,9 @@ def _run_single(data: pd.DataFrame, config: BacktestConfig) -> Tuple[Dict, pd.Da
             commission=config.cost.commission_rate(),
             margin=config.margin,
             finalize_trades=config.finalize_trades,
-            trade_on_close=config.trade_on_close if config.trade_on_close is not None else (not config.cost.realism_mode),
+            trade_on_close=config.trade_on_close
+            if config.trade_on_close is not None
+            else (not config.cost.realism_mode),
             exclusive_orders=config.exclusive_orders,
         )
         stats = bt.run()
@@ -140,8 +146,12 @@ def _run_single(data: pd.DataFrame, config: BacktestConfig) -> Tuple[Dict, pd.Da
         _restore_strategy_overrides(strategy_cls, overrides_original)
 
     stats = deepcopy(stats)
-    stats["Capital Utilization [%]"] = calculate_capital_utilization(stats, data, initial_cash=config.cash)
-    stats["Margin Utilization [%]"] = calculate_margin_utilization(stats, data, margin=config.margin)
+    stats["Capital Utilization [%]"] = calculate_capital_utilization(
+        stats, data, initial_cash=config.cash
+    )
+    stats["Margin Utilization [%]"] = calculate_margin_utilization(
+        stats, data, margin=config.margin
+    )
     if config.cost.realism_mode:
         est_slippage, est_funding, est_extra = estimate_realism_costs(
             stats,

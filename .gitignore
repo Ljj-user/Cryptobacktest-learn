@@ -1,4 +1,5 @@
 .venv/
+.ruff_cache/
 __pycache__/
 *.pyc
 *.pyo
@@ -7,5 +8,8 @@ __pycache__/
 # Backtest output artifacts
 *.html
 
-# Local data files
-data/*.csv
+# Local data files (any depth under data/)
+data/**/*.csv
+
+# Local experiment runs (regenerate with cli/tools)
+experiments/

@@ -1,6 +1,6 @@
-from backtesting import Strategy
 import numpy as np
 import pandas as pd
+from backtesting import Strategy
 
 
 def EMA(series, period):
@@ -21,10 +21,12 @@ def RSI(series, period=14):
 
 def ATR(high, low, close, period=14):
     h = pd.Series(high, dtype=float)
-    l = pd.Series(low, dtype=float)
+    low_s = pd.Series(low, dtype=float)
     c = pd.Series(close, dtype=float)
     prev_close = c.shift(1)
-    tr = pd.concat([(h - l).abs(), (h - prev_close).abs(), (l - prev_close).abs()], axis=1).max(axis=1)
+    tr = pd.concat(
+        [(h - low_s).abs(), (h - prev_close).abs(), (low_s - prev_close).abs()], axis=1
+    ).max(axis=1)
     atr = tr.rolling(window=period, min_periods=period).mean()
     return np.array(atr.bfill().to_numpy(), copy=True)
 
@@ -38,11 +40,8 @@ class LowDrawdownTrendStrategy(Strategy):
     rsi_exit = 60
 
     # --- position management ---
-    base_allocation = 0.04
-    add_allocation = 0.02
-    max_total_allocation = 0.18
-    max_entries = 3
-    add_gap_atr = 0.8
+    base_allocation = 0.09
+    max_total_allocation = 0.42
 
     # --- risk management ---
     atr_period = 14
@@ -58,18 +57,16 @@ class LowDrawdownTrendStrategy(Strategy):
         self.ema_fast = self.I(EMA, self.data.Close, self.ema_fast_period, name="EMA50")
         self.ema_slow = self.I(EMA, self.data.Close, self.ema_slow_period, name="EMA200")
         self.rsi = self.I(RSI, self.data.Close, self.rsi_period, name="RSI")
-        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, self.atr_period, name="ATR")
+        self.atr = self.I(
+            ATR, self.data.High, self.data.Low, self.data.Close, self.atr_period, name="ATR"
+        )
 
-        self.entry_count = 0
-        self.last_entry_price = np.nan
         self.dynamic_stop = np.nan
-        self.last_exit_bar = -10**9
+        self.last_exit_bar = -(10**9)
         self.pause_until_bar = -1
         self.equity_peak = self.equity
 
     def _reset_cycle(self, bar_idx):
-        self.entry_count = 0
-        self.last_entry_price = np.nan
         self.dynamic_stop = np.nan
         self.last_exit_bar = bar_idx
 
@@ -98,13 +95,17 @@ class LowDrawdownTrendStrategy(Strategy):
 
         self._update_equity_guard(bar_idx)
 
-        trend_up = float(self.ema_fast[-1]) > float(self.ema_slow[-1]) and price > float(self.ema_slow[-1])
+        trend_up = float(self.ema_fast[-1]) > float(self.ema_slow[-1]) and price > float(
+            self.ema_slow[-1]
+        )
         pullback_long = float(self.rsi[-1]) <= self.rsi_entry and price < float(self.ema_fast[-1])
 
         if self.position and self.position.is_long:
             hard_stop = price <= self.dynamic_stop if np.isfinite(self.dynamic_stop) else False
             take_profit = float(self.position.pl_pct) >= self.take_profit_pct
-            mean_revert_exit = float(self.rsi[-1]) >= self.rsi_exit and price >= float(self.ema_fast[-1])
+            mean_revert_exit = float(self.rsi[-1]) >= self.rsi_exit and price >= float(
+                self.ema_fast[-1]
+            )
             stop_loss = float(self.position.pl_pct) <= self.stop_loss_pct
             if hard_stop or stop_loss or take_profit or mean_revert_exit or (not trend_up):
                 self.position.close()
@@ -116,21 +117,6 @@ class LowDrawdownTrendStrategy(Strategy):
                 self.dynamic_stop = trail_candidate
             else:
                 self.dynamic_stop = max(self.dynamic_stop, trail_candidate)
-
-            if (
-                self.entry_count < self.max_entries
-                and trend_up
-                and pullback_long
-                and self._can_trade(bar_idx)
-                and price <= self.last_entry_price - atr_now * self.add_gap_atr
-            ):
-                current_alloc = self._current_notional(price) / self.equity
-                remain = self.max_total_allocation - current_alloc
-                add_size = min(self.add_allocation, remain)
-                if add_size > 0:
-                    self.buy(size=add_size)
-                    self.entry_count += 1
-                    self.last_entry_price = price
             return
 
         if not self._can_trade(bar_idx):
@@ -142,6 +128,4 @@ class LowDrawdownTrendStrategy(Strategy):
             init_size = min(self.base_allocation, remain)
             if init_size > 0:
                 self.buy(size=init_size)
-                self.entry_count = 1
-                self.last_entry_price = price
                 self.dynamic_stop = price - atr_now * self.stop_atr_mult

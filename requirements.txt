@@ -1,0 +1,9 @@
+# Crypto Futures Strategy Lab — runtime dependencies
+# Python 3.10+ recommended
+
+# FractionalBacktest is in backtesting.lib (0.3.x 不含此符号；请用 >=0.6.2)
+backtesting==0.6.5
+pandas>=2.0.0,<3
+numpy>=1.24.0,<3
+matplotlib>=3.7.0,<4
+ccxt>=4.0.0,<5

@@ -1,24 +1,27 @@
 # 用 CCXT 下载数据
- 
+
 import ccxt
 import pandas as pd
-from ccxt.base.errors import RequestTimeout, NetworkError
+from ccxt.base.errors import NetworkError, RequestTimeout
+
 
 def fetch_futures_ohlcv(
-    symbol='BTC/USDT:USDT',
-    timeframe='1h',
+    symbol="BTC/USDT:USDT",
+    timeframe="1h",
     limit=1000,
     max_retries=3,
-    proxy_url='http://127.0.0.1:7897',
-    start='2024-01-01T00:00:00Z',
-    end='2026-01-01T00:00:00Z',
+    proxy_url="http://127.0.0.1:7897",
+    start="2024-01-01T00:00:00Z",
+    end="2026-01-01T00:00:00Z",
 ):
-    exchange = ccxt.binance({
-        'timeout': 30000,  # 30s，默认 10s 在网络慢时容易超时
-        'enableRateLimit': True,
-        'proxies': {'http': proxy_url, 'https': proxy_url},
-        'options': {'defaultType': 'future'}  # 关键：合约模式
-    })
+    exchange = ccxt.binance(
+        {
+            "timeout": 30000,  # 30s，默认 10s 在网络慢时容易超时
+            "enableRateLimit": True,
+            "proxies": {"http": proxy_url, "https": proxy_url},
+            "options": {"defaultType": "future"},  # 关键：合约模式
+        }
+    )
     print(f"当前代理: {proxy_url}")
     start_ms = exchange.parse8601(start)
     end_ms = exchange.parse8601(end)
@@ -58,7 +61,9 @@ def fetch_futures_ohlcv(
         page += 1
         all_ohlcv.extend(ohlcv)
         last_ts = ohlcv[-1][0]
-        print(f"第 {page} 页下载完成：{len(ohlcv)} 根，最后时间戳 = {pd.to_datetime(last_ts, unit='ms')}")
+        print(
+            f"第 {page} 页下载完成：{len(ohlcv)} 根，最后时间戳 = {pd.to_datetime(last_ts, unit='ms')}"
+        )
 
         next_since = last_ts + timeframe_ms
         if next_since <= since:
@@ -68,12 +73,12 @@ def fetch_futures_ohlcv(
     if not all_ohlcv:
         raise RuntimeError("未下载到任何K线数据。")
 
-    df = pd.DataFrame(all_ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-    df = df[(df['timestamp'] >= start_ms) & (df['timestamp'] < end_ms)]
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    df = pd.DataFrame(all_ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
+    df = df[(df["timestamp"] >= start_ms) & (df["timestamp"] < end_ms)]
+    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df = df.dropna()
-    df = df.drop_duplicates(subset='timestamp').sort_values('timestamp')
-    df.set_index('timestamp', inplace=True)
+    df = df.drop_duplicates(subset="timestamp").sort_values("timestamp")
+    df.set_index("timestamp", inplace=True)
 
     # 数据质量闸门：必须保持严格的 1h 连续
     expected_delta = pd.Timedelta(hours=exchange.parse_timeframe(timeframe))
@@ -88,16 +93,16 @@ def fetch_futures_ohlcv(
         )
 
     # 简单异常K线过滤检查（高低价反转或非正价格）
-    invalid_rows = df[(df['high'] < df['low']) | (df[['open', 'high', 'low', 'close']] <= 0).any(axis=1)]
+    invalid_rows = df[
+        (df["high"] < df["low"]) | (df[["open", "high", "low", "close"]] <= 0).any(axis=1)
+    ]
     if not invalid_rows.empty:
         raise RuntimeError(f"检测到异常K线数据行: {len(invalid_rows)}")
 
-    df.to_csv('data/btc_futures_1h.csv')
-    print(
-        f"下载完成！时间范围 {start} ~ {end}，共 {len(df)} 根 K 线。"
-        f"\n最后三条：\n{df.tail(3)}"
-    )
+    df.to_csv("data/btc_futures_1h.csv")
+    print(f"下载完成！时间范围 {start} ~ {end}，共 {len(df)} 根 K 线。\n最后三条：\n{df.tail(3)}")
     return df
+
 
 if __name__ == "__main__":
     fetch_futures_ohlcv()

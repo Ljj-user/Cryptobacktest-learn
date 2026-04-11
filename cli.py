@@ -5,7 +5,12 @@ from backtesting.lib import FractionalBacktest
 
 from backtest_engine import load_ohlcv_data, run_backtest
 from config import BacktestConfig
-from experiment_tracker import append_run_index, create_run_dir, load_recent_runs, save_run_artifacts
+from experiment_tracker import (
+    append_run_index,
+    create_run_dir,
+    load_recent_runs,
+    save_run_artifacts,
+)
 from report_utils import write_stats_cards_to_html
 from strategy_registry import STRATEGY_REGISTRY, get_strategy_meta, list_strategy_keys
 
@@ -66,7 +71,9 @@ def main():
     parser.add_argument("--wf-train-bars", type=int, default=24 * 120)
     parser.add_argument("--wf-test-bars", type=int, default=24 * 30)
     parser.add_argument("--wf-step-bars", type=int, default=24 * 30)
-    parser.add_argument("--set", action="append", default=[], help="策略参数覆盖，例如 --set rsi_entry=30")
+    parser.add_argument(
+        "--set", action="append", default=[], help="策略参数覆盖，例如 --set rsi_entry=30"
+    )
     args = parser.parse_args()
 
     if args.list_strategies:
@@ -108,7 +115,9 @@ def main():
             commission=config.cost.commission_rate(),
             margin=config.margin,
             finalize_trades=config.finalize_trades,
-            trade_on_close=config.trade_on_close if config.trade_on_close is not None else (not config.cost.realism_mode),
+            trade_on_close=config.trade_on_close
+            if config.trade_on_close is not None
+            else (not config.cost.realism_mode),
             exclusive_orders=config.exclusive_orders,
         )
         bt_plot.run()

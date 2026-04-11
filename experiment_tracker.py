@@ -19,7 +19,9 @@ def create_run_dir(experiments_dir: str, strategy_key: str) -> str:
     return run_dir
 
 
-def save_run_artifacts(run_dir: str, config: Dict, stats: Dict, trades: pd.DataFrame, equity_curve: pd.DataFrame) -> None:
+def save_run_artifacts(
+    run_dir: str, config: Dict, stats: Dict, trades: pd.DataFrame, equity_curve: pd.DataFrame
+) -> None:
     os.makedirs(run_dir, exist_ok=True)
     with open(os.path.join(run_dir, "config.json"), "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=2, default=_json_default)
